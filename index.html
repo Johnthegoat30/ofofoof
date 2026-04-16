@@ -1,1 +1,83 @@
-<!DOCTYPE html>\n<html lang='en'>\n<head>\n    <meta charset='UTF-8'>\n    <meta name='viewport' content='width=device-width, initial-scale=1.0'>\n    <title>3D Multiplayer Shooter Game</title>\n    <style>\n        body { margin: 0; font-family: Arial, sans-serif; }\n        canvas { display: block; margin: auto; }\n        #hud { position: absolute; top: 10px; left: 10px; color: white; z-index: 100; }\n        /* Add your styles for shop, leaderboard here */\n    </style>\n</head>\n<body>\n    <div id='hud'>\n        <div id='score'>Score: 0</div>\n        <div id='kills'>Kills: 0</div>\n        <div id='team'>Team: Red</div>\n    </div>\n    <canvas id='renderCanvas'></canvas>\n    <script src='https://cdnjs.cloudflare.com/ajax/libs/babylonjs/5.0.0/babylon.js'></script>\n    <script src='https://cdn.socket.io/4.0.0/socket.io.min.js'></script>\n    <script>\n        // Babylon.js and Socket.io initialization\n        const canvas = document.getElementById('renderCanvas');\n        const engine = new BABYLON.Engine(canvas, true);\n        const scene = new BABYLON.Scene(engine);\n        const socket = io('https://your-server-address');\n        let players = {};\n        let score = 0;\n        let kills = 0;\n        let team = 'Red'; // Default team\n\n        function createPlayer(name, position) {\n            let player = BABYLON.MeshBuilder.CreateBox(name, {size: 1}, scene);\n            player.position = position;\n            return player;\n        }\n\n        socket.on('playerJoined', (data) => {\n            players[data.id] = createPlayer(data.name, data.position);\n        });\n\n        function gameLoop() {\n            scene.render();\n            score += 1; // Placeholder for score calculation\n            document.getElementById('score').innerText = 'Score: ' + score;\n            window.requestAnimationFrame(gameLoop);\n        }\n        engine.runRenderLoop(gameLoop);\n\n        window.addEventListener('resize', function() {\n            engine.resize();\n        });\n    </script>\n</body>\n</html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Shooter Game</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+        #shop { position: absolute; top: 10px; left: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; }
+        #leaderboard { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+        const canvas = document.createElement('canvas');
+        document.body.appendChild(canvas);
+        const engine = new BABYLON.Engine(canvas, true);
+        const scene = new BABYLON.Scene(engine);
+        const camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, 0, 0), scene);
+        camera.attachControl(canvas, true);
+        const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene);
+
+        const ground = BABYLON.Mesh.CreateGround("ground", 100, 100, 2, scene);
+        const purpleTeam = [];
+        const yellowTeam = [];
+        let players = {};
+        let bullets = [];
+        let score = { purple: 0, yellow: 0 };
+        const socket = io();
+
+        function createPlayer(color, position) {
+            const player = BABYLON.MeshBuilder.CreateBox(color + "Player", { size: 1 }, scene);
+            player.material = new BABYLON.StandardMaterial(color + "Material", scene);
+            player.material.diffuseColor = color === 'purple' ? new BABYLON.Color3(0.5, 0, 0.5) : new BABYLON.Color3(1, 1, 0);
+            player.position = position;
+            players[color] = player;
+            return player;
+        }
+
+        function shoot(color) {
+            const bullet = BABYLON.MeshBuilder.CreateSphere("bullet", { diameter: 0.1 }, scene);
+            bullet.material = new BABYLON.StandardMaterial("bulletMaterial", scene);
+            bullet.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
+            bullet.position = players[color].position.clone();
+            bullets.push(bullet);
+            return bullet;
+        }
+
+        socket.on('createPlayer', (color, position) => { createPlayer(color, position); });
+        socket.on('shoot', (color) => { shoot(color); });
+
+        function update() {
+            bullets.forEach((bullet) => {
+                bullet.position.z += 0.1;
+                if (bullet.position.z > 50) { 
+                    bullet.dispose(); 
+                    bullets = bullets.filter(b => b !== bullet);
+                }
+            });
+            engine.runRenderLoop(() => {
+                scene.render();
+            });
+            requestAnimationFrame(update);
+        }
+
+        socket.emit('joinGame', 'purple');
+        createPlayer('purple', new BABYLON.Vector3(0, 0, 0));
+        createPlayer('yellow', new BABYLON.Vector3(3, 0, 0));
+
+        window.addEventListener('keydown', (event) => {
+            if (event.key === ' ') { shoot('purple'); socket.emit('shoot', 'purple'); }
+        });
+
+        update();
+    </script>
+    <div id="shop">Shop Placeholder</div>
+    <div id="leaderboard">Leaderboard Placeholder</div>
+</body>
+</html>

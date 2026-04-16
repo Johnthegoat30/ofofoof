@@ -3,81 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D Shooter Game</title>
+    <title>3D Multiplayer FPS Game</title>
     <style>
-        body { margin: 0; overflow: hidden; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #222; color: #fff; }
         canvas { display: block; }
-        #shop { position: absolute; top: 10px; left: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; }
-        #leaderboard { position: absolute; top: 10px; right: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px; }
+        #hud { position: absolute; top: 10px; left: 10px; }
+        .team-display { font-size: 20px; }
+        .stats { font-size: 16px; }
+        #shop, #inventory { display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); }
     </style>
 </head>
 <body>
-
-    <script src="https://cdn.babylonjs.com/babylon.js"></script>
-    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <canvas id="gameCanvas"></canvas>
+    <div id="hud">
+        <div class="team-display">
+            Team: <span id="teamDisplay"></span>
+        </div>
+        <div class="stats">
+            Kills: <span id="killsCount">0</span> | Ammo: <span id="ammoCount">30</span> | Health: <span id="healthBar">100</span>
+        </div>
+        <div class="current-weapon">Weapon: <span id="currentWeapon">Rifle</span></div>
+    </div>
     <script>
-        const canvas = document.createElement('canvas');
-        document.body.appendChild(canvas);
-        const engine = new BABYLON.Engine(canvas, true);
-        const scene = new BABYLON.Scene(engine);
-        const camera = new BABYLON.ArcRotateCamera("camera1", Math.PI / 2, Math.PI / 4, 10, new BABYLON.Vector3(0, 0, 0), scene);
-        camera.attachControl(canvas, true);
-        const light = new BABYLON.HemisphericLight("light1", new BABYLON.Vector3(1, 1, 0), scene);
+        // Constants and Variables
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let kills = 0; let health = 100; let team = 'Purple';
+        let currentWeapon = 'Rifle';
 
-        const ground = BABYLON.Mesh.CreateGround("ground", 100, 100, 2, scene);
-        const purpleTeam = [];
-        const yellowTeam = [];
-        let players = {};
-        let bullets = [];
-        let score = { purple: 0, yellow: 0 };
-        const socket = io();
-
-        function createPlayer(color, position) {
-            const player = BABYLON.MeshBuilder.CreateBox(color + "Player", { size: 1 }, scene);
-            player.material = new BABYLON.StandardMaterial(color + "Material", scene);
-            player.material.diffuseColor = color === 'purple' ? new BABYLON.Color3(0.5, 0, 0.5) : new BABYLON.Color3(1, 1, 0);
-            player.position = position;
-            players[color] = player;
-            return player;
+        // Helper functions
+        function updateHUD() {
+            document.getElementById('killsCount').innerText = kills;
+            document.getElementById('healthBar').innerText = health;
+            document.getElementById('currentWeapon').innerText = currentWeapon;
+            document.getElementById('teamDisplay').innerText = team;
         }
 
-        function shoot(color) {
-            const bullet = BABYLON.MeshBuilder.CreateSphere("bullet", { diameter: 0.1 }, scene);
-            bullet.material = new BABYLON.StandardMaterial("bulletMaterial", scene);
-            bullet.material.diffuseColor = new BABYLON.Color3(0, 0, 0);
-            bullet.position = players[color].position.clone();
-            bullets.push(bullet);
-            return bullet;
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Draw game world, players, and other elements here
+            updateHUD();
+            requestAnimationFrame(gameLoop);
         }
 
-        socket.on('createPlayer', (color, position) => { createPlayer(color, position); });
-        socket.on('shoot', (color) => { shoot(color); });
-
-        function update() {
-            bullets.forEach((bullet) => {
-                bullet.position.z += 0.1;
-                if (bullet.position.z > 50) { 
-                    bullet.dispose(); 
-                    bullets = bullets.filter(b => b !== bullet);
-                }
-            });
-            engine.runRenderLoop(() => {
-                scene.render();
-            });
-            requestAnimationFrame(update);
-        }
-
-        socket.emit('joinGame', 'purple');
-        createPlayer('purple', new BABYLON.Vector3(0, 0, 0));
-        createPlayer('yellow', new BABYLON.Vector3(3, 0, 0));
-
-        window.addEventListener('keydown', (event) => {
-            if (event.key === ' ') { shoot('purple'); socket.emit('shoot', 'purple'); }
-        });
-
-        update();
+        // Start the game
+        gameLoop();
     </script>
-    <div id="shop">Shop Placeholder</div>
-    <div id="leaderboard">Leaderboard Placeholder</div>
 </body>
 </html>

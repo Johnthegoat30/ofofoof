@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Game</title>
+    <script>
+        let enemies = [];
+
+        function spawnEnemies() {
+            // Logic to spawn enemies
+            if (enemies.length === 0) {
+                enemies.push(createNewEnemy());
+            }
+        }
+
+        function createNewEnemy() {
+            // Create and return a new enemy object
+            return { /* enemy properties */ };
+        }
+
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'r') {
+                reloadWeapon();
+                displayHint('Reloading weapon...');
+            } else if (event.key === 'e') {
+                switchWeapons();
+                displayHint('Switching weapons...');
+            }
+        });
+
+        function reloadWeapon() {
+            // Logic to reload weapon
+        }
+
+        function switchWeapons() {
+            // Logic to switch weapons
+        }
+
+        function displayHint(message) {
+            const hintElement = document.getElementById('keyboard-hint');
+            hintElement.innerText = message;
+            setTimeout(() => { hintElement.innerText = ''; }, 2000);
+        }
+
+        setInterval(spawnEnemies, 1000); // Automatically spawn enemies every second
+    </script>
+</head>
+<body>
+    <div id="keyboard-hint" style="position: fixed; top: 10px; left: 10px; background: rgba(255, 255, 255, 0.8); padding: 10px; border-radius: 5px;"></div>
+    <h1>Your Game</h1>
+</body>
+</html>
